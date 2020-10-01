@@ -25,10 +25,14 @@ def login(student_number: int, password: int):
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101 Firefox/68.0',
     }
     response = requests.get(url, headers=headers, params=params, timeout=1)
+    print(response.text)
     if 'Error' in response.text:
         raise Exception('参数错误，登陆失败')
-    else:
+    elif '"result":1' in response.text:
         return True
+    else:
+        # 各种各样的原因
+        raise Exception('请检查网络配置及确认账号及密码是否正确！')
 
 
 def get_wifi_name():
