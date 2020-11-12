@@ -70,6 +70,49 @@ def wifi_connect(wifiname: str = 'local.wlan.bjtu'):
             return False
 
 
+def config() -> dict or bool:
+    import configparser, os
+    path = 'config.ini'
+
+    class Config:
+        def __init__(self):
+            self.cf = configparser.ConfigParser()
+            self.cf.read(path)
+
+        def get_connect(self, param):
+            value = self.cf.get("CONNECT", param)
+            return value
+
+        def set_connect(self, param, value):
+            self.cf.set("CONNECT", param, value)
+
+    cp = Config()
+
+    if not os.path.exists(path):
+        print('首次使用请输入个人信息~')
+        student_number = input('请输入学号：')
+        password = input('请输入密码：')
+        with open(path, 'w') as fp:
+            cp.cf.add_section('CONNECT')
+            cp.set_connect('student_number', student_number)
+            cp.set_connect('password', password)
+            cp.cf.write(fp)
+        return dict(student_number=student_number,
+                    password=password,
+                    )
+    else:
+        # 如果文件存在，读取配置文件
+        try:
+            student_number = int(cp.get_connect('student_number'))
+            password = int(cp.get_connect('password'))
+            return dict(student_number=student_number,
+                        password=password,
+                        )
+        except:
+            os.remove(path)
+            return config()
+
+
 def run():
     while 1:
         wifiname = 'local.wlan.bjtu'
@@ -83,8 +126,9 @@ def run():
             time.sleep(1)  # 1s后重连
     while 1:
         print('正在尝试连接校园网...')
+        data = config()
         try:
-            status = login(18230000, 12345678)
+            status = login(data['student_number'], data['password'])
         except Exception as err:
             status = str(err)
         if status == True:
