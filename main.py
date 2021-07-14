@@ -20,7 +20,7 @@ def login(student_number: int, password: int):
     time1_params = {'callback': 'dr%d' % (t + interval)}
     time2_params = {'_': t, }  # 测试表明只有当callback位于参数第一个，用户名紧随其后，_位于末尾时请求才有效
     params = {**time1_params, **users_params, **fixed_params, **time2_params}
-
+    print(params)
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:68.0) Gecko/20100101 Firefox/68.0',
     }
@@ -113,9 +113,8 @@ def config() -> dict or bool:
             return config()
 
 
-def run():
+def run(wifiname: str):
     while 1:
-        wifiname = 'local.wlan.bjtu'
         print('正在尝试连接%s...' % wifiname)
         status = wifi_connect(wifiname)
         if status == True:
@@ -133,13 +132,15 @@ def run():
             status = str(err)
         if status == True:
             print('已经连上校园网！')
-            break
+            return True
         else:
             if 'timed out' in status:
                 print('连接超时，即将重试')
             else:
                 print(status)
             time.sleep(1)  # 1s后重连
+    return False
 
 
-run()
+if not run('web.wlan.bjtu'):
+    run('local.wlan.bjtu')
