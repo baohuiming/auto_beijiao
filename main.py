@@ -123,7 +123,7 @@ def run(wifiname: str):
             break
         else:
             time.sleep(1)  # 1s后重连
-    while 1:
+    for _ in range(30):
         print('正在尝试连接校园网...')
         data = config()
         try:
@@ -142,5 +142,6 @@ def run(wifiname: str):
     return False
 
 
-if not run('web.wlan.bjtu'):
-    run('local.wlan.bjtu')
+if not run('local.wlan.bjtu') and not run('web.wlan.bjtu'):
+    print('连接校园网失败!')
+    time.sleep(30)
