@@ -5,6 +5,9 @@ from pywifi import const
 from os import popen
 
 
+wifi = pywifi.PyWiFi()
+iface = wifi.interfaces()[0]
+
 def login(student_number: int, password: int):
     """登陆校园网"""
     url = r"http://10.10.43.3/drcom/login"
@@ -49,26 +52,33 @@ def get_wifi_name():
     return False
 
 
+def load_list():
+    iface.scan()
+    time.sleep(3)
+    results = iface.scan_results()
+    ssids = [result.ssid for result in results]
+    print(ssids)
+    return ssids
+
+
 def wifi_connect(wifiname: str = "local.wlan.bjtu"):
     """连接指定WiFi"""
-    wifi = pywifi.PyWiFi()
-    ifaces = wifi.interfaces()[0]
     wifi_now = get_wifi_name()
     if wifi_now and wifi_now != wifiname:
         # 当前连接的WiFi与想连接的WiFi不一致
         print("断开与%s的连接" % wifi_now)
-        ifaces.disconnect()  # 断开所有wifi连接
+        iface.disconnect()  # 断开所有wifi连接
         time.sleep(1)
     elif wifi_now == wifiname:
         return True
 
-    if ifaces.status() == const.IFACE_DISCONNECTED:
+    if iface.status() == const.IFACE_DISCONNECTED:
         profile = pywifi.Profile()  # 创建WiFi连接文件
         profile.ssid = wifiname  # WiFi的ssid，即wifi的名称
-        tep_profile = ifaces.add_network_profile(profile)  # 设定新的连接文件
-        ifaces.connect(tep_profile)  # 连接WiFi
+        tep_profile = iface.add_network_profile(profile)  # 设定新的连接文件
+        iface.connect(tep_profile)  # 连接WiFi
         time.sleep(1.5)
-        if ifaces.status() == const.IFACE_CONNECTED:
+        if iface.status() == const.IFACE_CONNECTED:
             return True
         else:
             return False
@@ -111,12 +121,13 @@ def config() -> dict or bool:
         # 如果文件存在，读取配置文件
         try:
             student_number = int(cp.get_connect("student_number"))
-            password = int(cp.get_connect("password"))
+            password = cp.get_connect("password")
             return dict(
                 student_number=student_number,
                 password=password,
             )
-        except:
+        except Exception as err:
+            print(err)
             os.remove(path)
             return config()
 
@@ -163,7 +174,10 @@ def connect_ssids(ssids: list):
 def entry():
     # 超时自动选择
     from inputimeout import inputimeout, TimeoutOccurred
-
+    if not ({"web.wlan.bjtu", "local.wlan.bjtu"} & set(load_list())):
+        print("未检测到校园网WiFi，即将退出")
+        time.sleep(2)
+        return
     try:
         num = inputimeout(
             prompt="请输入[1]或[2]选择要连接的站点（2s后自动跳过）\n"
