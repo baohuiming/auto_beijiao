@@ -2,11 +2,13 @@ import requests
 import time
 import pywifi
 from pywifi import const
+import os
 from os import popen
 
 
 wifi = pywifi.PyWiFi()
 iface = wifi.interfaces()[0]
+
 
 def login(student_number: int, password: int):
     """登陆校园网"""
@@ -84,11 +86,8 @@ def wifi_connect(wifiname: str = "local.wlan.bjtu"):
             return False
 
 
-def config() -> dict or bool:
+def config(path="config.ini") -> dict or bool:
     import configparser
-    import os
-
-    path = "config.ini"
 
     class Config:
         def __init__(self):
@@ -129,10 +128,16 @@ def config() -> dict or bool:
         except Exception as err:
             print(err)
             os.remove(path)
-            return config()
+            return False
 
 
 def run(wifiname: str):
+    data = [config("config.ini")]
+    for i in range(10):
+        path = "config%d.ini" % i
+        if os.path.exists(path):
+            data.append(config(path))
+
     while 1:
         print("正在尝试连接%s..." % wifiname)
         status = wifi_connect(wifiname)
@@ -142,11 +147,12 @@ def run(wifiname: str):
             break
         else:
             time.sleep(1)  # 1s后重连
-    for _ in range(30):
+    for i in range(30):
         print("正在尝试连接校园网...")
-        data = config()
         try:
-            status = login(data["student_number"], data["password"])
+            status = login(
+                data[i % len(data)]["student_number"], data[i % len(data)]["password"]
+            )
         except Exception as err:
             status = str(err)
         if status == True:
@@ -174,6 +180,7 @@ def connect_ssids(ssids: list):
 def entry():
     # 超时自动选择
     from inputimeout import inputimeout, TimeoutOccurred
+
     if not ({"web.wlan.bjtu", "local.wlan.bjtu"} & set(load_list())):
         print("未检测到校园网WiFi，即将退出")
         time.sleep(2)
